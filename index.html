@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>DyatRubix — Simulator Kubus Rubik Online 3D</title>
+  <title>DyatRubix — Simulator Kubus Rubik 3D</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
@@ -35,6 +35,1157 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
+      position: relative;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body.lock-scroll { overflow: hidden; height: 100vh; }
+
+    /* ===== Animated Dark Background ===== */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 20% 20%, rgba(255, 107, 53, 0.12), transparent 50%),
+        radial-gradient(ellipse at 80% 80%, rgba(78, 205, 196, 0.1), transparent 50%),
+        radial-gradient(ellipse at 50% 50%, rgba(255, 210, 63, 0.05), transparent 70%),
+        linear-gradient(180deg, var(--bg-dark) 0%, var(--bg-mid) 100%);
+      z-index: -2;
+    }
+
+    .bg-shape {
+      position: fixed;
+      border-radius: 30%;
+      filter: blur(80px);
+      opacity: 0.25;
+      z-index: -1;
+      animation: float 22s ease-in-out infinite;
+      pointer-events: none;
+    }
+    .bg-shape:nth-child(1) { width: 320px; height: 320px; background: #ff6b35; top: 5%; left: -8%; }
+    .bg-shape:nth-child(2) { width: 280px; height: 280px; background: #4ecdc4; bottom: 10%; right: -8%; animation-delay: -7s; }
+    .bg-shape:nth-child(3) { width: 200px; height: 200px; background: #6366f1; top: 45%; left: 55%; animation-delay: -14s; }
+
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); }
+      33% { transform: translate(40px, -50px) rotate(120deg) scale(1.1); }
+      66% { transform: translate(-30px, 40px) rotate(240deg) scale(0.9); }
+    }
+
+    /* ===== Header ===== */
+    header {
+      padding: 20px 16px 8px;
+      text-align: center;
+      position: relative;
+      z-index: 10;
+    }
+
+    .logo {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(1.8rem, 6vw, 3rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: linear-gradient(135deg, #ff6b35 0%, #ffd23f 50%, #4ecdc4 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 2px 20px rgba(255, 107, 53, 0.3));
+    }
+
+    .logo-cube {
+      width: 0.85em;
+      height: 0.85em;
+      position: relative;
+      display: inline-block;
+      -webkit-text-fill-color: initial;
+      animation: spin 6s linear infinite;
+      transform-style: preserve-3d;
+    }
+    .logo-cube::before, .logo-cube::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 18%;
+    }
+    .logo-cube::before {
+      background: linear-gradient(135deg, #ff6b35, #ffd23f);
+      box-shadow: 0 0 20px rgba(255, 107, 53, 0.5);
+    }
+    .logo-cube::after {
+      background: linear-gradient(135deg, #4ecdc4, #6366f1);
+      clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+      opacity: 0.6;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .subtitle {
+      font-size: clamp(0.8rem, 2vw, 0.95rem);
+      color: var(--text-muted);
+      margin-top: 6px;
+      font-weight: 400;
+      letter-spacing: 0.02em;
+    }
+
+    /* ===== Main ===== */
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 8px 16px 24px;
+      gap: 14px;
+      position: relative;
+      z-index: 5;
+    }
+
+    /* ===== Cube Canvas (Large for Desktop) ===== */
+    .cube-wrapper {
+      width: 100%;
+      /* Maksimal 800px atau 80% lebar layar agar sangat mudah diseret di desktop */
+      max-width: min(800px, 80vw, 75vh);
+      aspect-ratio: 1;
+      position: relative;
+      border-radius: 24px;
+      background: radial-gradient(circle at center, rgba(255,255,255,0.04) 0%, transparent 70%);
+    }
+
+    .cube-wrapper::before {
+      content: '';
+      position: absolute;
+      inset: -10px;
+      border-radius: 28px;
+      background: radial-gradient(circle at center, rgba(255, 107, 53, 0.08), transparent 60%);
+      pointer-events: none;
+      animation: pulse 4s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.5; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.05); }
+    }
+
+    #canvas-container {
+      width: 100%;
+      height: 100%;
+      cursor: grab;
+      touch-action: none;
+      border-radius: 24px;
+      overflow: hidden;
+    }
+
+    #canvas-container:active { cursor: grabbing; }
+
+    /* ===== Stats Bar ===== */
+    .stats {
+      display: flex;
+      gap: 12px;
+      width: 100%;
+      max-width: 800px;
+    }
+
+    .stat-card {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      padding: 10px 16px;
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      border-radius: 14px;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+
+    .stat-label {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-weight: 500;
+    }
+
+    .stat-value {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .stat-card:nth-child(2) .stat-value { color: var(--accent-2); }
+
+    /* ===== Controls ===== */
+    .controls {
+      width: 100%;
+      max-width: 800px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .control-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .btn {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 600;
+      padding: 11px 22px;
+      border: 1px solid var(--panel-border);
+      background: var(--panel);
+      color: var(--text);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      background: var(--panel-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    .btn:active { transform: translateY(0); }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), #ff8c42);
+      border: 1px solid rgba(255, 107, 53, 0.3);
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #ff8c42, var(--accent));
+      box-shadow: 0 4px 24px rgba(255, 107, 53, 0.4);
+    }
+
+    .btn-toggle.active {
+      background: linear-gradient(135deg, var(--accent-2), #45b7af);
+      border: 1px solid rgba(78, 205, 196, 0.3);
+      color: #fff;
+      font-weight: 700;
+    }
+
+    /* ===== Face Buttons Grid ===== */
+    .face-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 6px;
+    }
+
+    .face-btn {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      padding: 12px 0;
+      border: 1px solid var(--panel-border);
+      background: var(--panel);
+      color: var(--text);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      text-align: center;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .face-btn::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 3px;
+      border-radius: 3px 0 0 3px;
+    }
+
+    .face-btn[data-move^="U"]::before { background: #f8f8f8; }
+    .face-btn[data-move^="D"]::before { background: #ffd500; }
+    .face-btn[data-move^="L"]::before { background: #ff8c00; }
+    .face-btn[data-move^="R"]::before { background: #d32f2f; }
+    .face-btn[data-move^="F"]::before { background: #43a047; }
+    .face-btn[data-move^="B"]::before { background: #1e88e5; }
+
+    .face-btn:hover {
+      background: var(--panel-hover);
+      border-color: rgba(255, 107, 53, 0.3);
+      transform: translateY(-1px);
+    }
+
+    .face-btn:active {
+      transform: scale(0.93);
+      background: var(--accent);
+      color: #fff;
+    }
+
+    /* ===== Hint & Info ===== */
+    .hint {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-align: center;
+      padding: 2px 12px;
+      line-height: 1.5;
+    }
+
+    .hint kbd {
+      display: inline-block;
+      padding: 1px 6px;
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      border-radius: 4px;
+      font-family: 'Space Grotesk', monospace;
+      font-size: 0.7rem;
+      color: var(--text);
+    }
+
+    .info {
+      max-width: 800px;
+      text-align: center;
+      padding: 14px 18px;
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      border-radius: var(--radius);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      line-height: 1.65;
+    }
+
+    .info strong {
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    /* ===== Toast ===== */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(120px);
+      background: rgba(18, 18, 42, 0.95);
+      border: 1px solid rgba(255, 107, 53, 0.3);
+      color: var(--text);
+      padding: 12px 28px;
+      border-radius: 100px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      z-index: 1000;
+      transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      pointer-events: none;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      white-space: nowrap;
+    }
+
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .toast.success { border-color: rgba(78, 205, 196, 0.4); }
+    .toast.success::before {
+      content: '✓ ';
+      color: var(--accent-2);
+      font-weight: 700;
+    }
+
+    /* ===== Footer ===== */
+    footer {
+      text-align: center;
+      padding: 12px 16px 20px;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      position: relative;
+      z-index: 5;
+    }
+
+    footer strong { color: var(--accent); }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 768px) {
+      .cube-wrapper { max-width: min(450px, 90vw, 60vh); }
+      .stats, .controls, .info { max-width: 450px; }
+    }
+
+    @media (max-width: 600px) {
+      .face-grid { grid-template-columns: repeat(4, 1fr); gap: 6px; }
+      .face-btn { padding: 14px 0; font-size: 0.9rem; }
+      .btn { padding: 12px 18px; font-size: 0.82rem; }
+      .stat-value { font-size: 1.1rem; }
+      main { padding: 8px 12px 20px; gap: 12px; }
+    }
+
+    @media (max-width: 380px) {
+      .face-grid { grid-template-columns: repeat(3, 1fr); }
+      .control-row { gap: 6px; }
+      .btn { padding: 11px 14px; font-size: 0.78rem; }
+    }
+
+    @media (orientation: landscape) and (max-height: 500px) {
+      .cube-wrapper { max-width: min(280px, 50vh); }
+      header { padding: 8px 16px 4px; }
+      main { gap: 8px; padding: 4px 16px 12px; }
+      .info { display: none; }
+    }
+
+    /* Focus styles */
+    .btn:focus-visible, .face-btn:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-shape"></div>
+  <div class="bg-shape"></div>
+  <div class="bg-shape"></div>
+
+  <header>
+    <div class="logo">
+      <span class="logo-cube"></span>
+      DyatRubix
+    </div>
+    <p class="subtitle">Simulator Kubus Rubik Online 3D</p>
+  </header>
+
+  <main>
+    <div class="cube-wrapper">
+      <div id="canvas-container"></div>
+    </div>
+
+    <div class="stats">
+      <div class="stat-card">
+        <span class="stat-label">Waktu</span>
+        <span class="stat-value" id="timer">00:00</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Gerakan</span>
+        <span class="stat-value" id="moveCount">0</span>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="control-row">
+        <button class="btn btn-primary" id="scrambleBtn">Acak</button>
+        <button class="btn" id="resetBtn">Reset</button>
+        <button class="btn btn-toggle" id="lockScrollBtn">Kunci Gulir</button>
+      </div>
+
+      <div class="face-grid">
+        <button class="face-btn" data-move="U">U</button>
+        <button class="face-btn" data-move="U'">U'</button>
+        <button class="face-btn" data-move="D">D</button>
+        <button class="face-btn" data-move="D'">D'</button>
+        <button class="face-btn" data-move="L">L</button>
+        <button class="face-btn" data-move="L'">L'</button>
+        <button class="face-btn" data-move="R">R</button>
+        <button class="face-btn" data-move="R'">R'</button>
+        <button class="face-btn" data-move="F">F</button>
+        <button class="face-btn" data-move="F'">F'</button>
+        <button class="face-btn" data-move="B">B</button>
+        <button class="face-btn" data-move="B'">B'</button>
+      </div>
+    </div>
+
+    <p class="hint">
+      Seret pada sisi kubus untuk memutar • Seret latar untuk memutar kamera • Keyboard: <kbd>U D L R F B</kbd> + <kbd>Shift</kbd>
+    </p>
+
+    <div class="info">
+      <strong>DyatRubix</strong> — Mainkan simulator kubus Rubik 3D secara online. Latih kemampuan
+      menyelesaikan kubus dengan berbagai putaran. Cocok untuk pemula maupun yang sudah mahir.
+      Gunakan tombol di atas atau seret langsung pada kubus untuk memutar sisi.
+    </div>
+  </main>
+
+  <footer>
+    <strong>DyatRubix</strong> — Dibuat dengan Three.js • Berjalan di HP & Desktop
+  </footer>
+
+  <div class="toast" id="toast"></div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    // ===== Polyfill roundRect =====
+    if (!CanvasRenderingContext2D.prototype.roundRect) {
+      CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+        const radius = typeof r === 'number' ? r : (r[0] || 0);
+        this.beginPath();
+        this.moveTo(x + radius, y);
+        this.lineTo(x + w - radius, y);
+        this.quadraticCurveTo(x + w, y, x + w, y + radius);
+        this.lineTo(x + w, y + h - radius);
+        this.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+        this.lineTo(x + radius, y + h);
+        this.quadraticCurveTo(x, y + h, x, y + h - radius);
+        this.lineTo(x, y + radius);
+        this.quadraticCurveTo(x, y, x + radius, y);
+        this.closePath();
+      };
+    }
+
+    // ===== Scene Setup =====
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+
+    const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 100);
+    camera.position.set(5, 4.5, 6);
+    camera.lookAt(0, 0, 0);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    container.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    controls.enablePan = false;
+    controls.minDistance = 5;
+    controls.maxDistance = 14;
+    controls.rotateSpeed = 0.8;
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = 0.5;
+
+    // ===== Lighting (Diperkuat agar kubus terang) =====
+    scene.add(new THREE.AmbientLight(0xffffff, 1.0));
+
+    const keyLight = new THREE.DirectionalLight(0xffffff, 1.5);
+    keyLight.position.set(5, 8, 6);
+    scene.add(keyLight);
+
+    const fillLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    fillLight.position.set(-5, -3, -4);
+    scene.add(fillLight);
+
+    const rimLight = new THREE.DirectionalLight(0xffffff, 0.6);
+    rimLight.position.set(0, 2, -8);
+    scene.add(rimLight);
+
+    // ===== Colors (Dibuat sangat cerah dan tidak kusam) =====
+    const COLORS = {
+      white:  '#ffffff',
+      yellow: '#ffeb3b',
+      red:    '#f44336',
+      orange: '#ff9800',
+      blue:   '#2196f3',
+      green:  '#4caf50',
+      black:  '#000000'
+    };
+
+    // ===== Texture Creation =====
+    const textureCache = {};
+
+    function createStickerTexture(color) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+
+      // Background gelap (plastik kubus) - dibuat sangat hitam agar stiker menonjol
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(0, 0, 256, 256);
+
+      // Stiker berwarna
+      const p = 12;
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.roundRect(p, p, 256 - 2 * p, 256 - 2 * p, 22);
+      ctx.fill();
+
+      // Highlight halus agar terlihat mengkilap tapi tidak mengurangi kecerahan
+      const grad = ctx.createLinearGradient(0, p, 0, 256 - p);
+      grad.addColorStop(0, 'rgba(255,255,255,0.2)');
+      grad.addColorStop(0.5, 'rgba(255,255,255,0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.roundRect(p, p, 256 - 2 * p, 256 - 2 * p, 22);
+      ctx.fill();
+
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+      return texture;
+    }
+
+    function createLogoTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(0, 0, 256, 256);
+
+      const p = 12;
+      ctx.fillStyle = COLORS.white;
+      ctx.beginPath();
+      ctx.roundRect(p, p, 256 - 2 * p, 256 - 2 * p, 22);
+      ctx.fill();
+
+      // Gradient highlight
+      const grad = ctx.createLinearGradient(0, p, 0, 256 - p);
+      grad.addColorStop(0, 'rgba(255,255,255,0.2)');
+      grad.addColorStop(0.5, 'rgba(255,255,255,0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.roundRect(p, p, 256 - 2 * p, 256 - 2 * p, 22);
+      ctx.fill();
+
+      // Teks "DyatRubix" — dua baris
+      ctx.fillStyle = '#1a1a2e';
+      ctx.font = 'bold 38px "Space Grotesk", Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      // Shadow
+      ctx.fillStyle = 'rgba(255, 107, 53, 0.15)';
+      ctx.fillText('Dyat', 129, 97);
+      ctx.fillText('Rubix', 129, 161);
+
+      // Main text
+      ctx.fillStyle = '#1a1a2e';
+      ctx.fillText('Dyat', 128, 96);
+      ctx.fillText('Rubix', 128, 160);
+
+      // Accent dot
+      ctx.fillStyle = '#ff6b35';
+      ctx.beginPath();
+      ctx.arc(128, 200, 6, 0, Math.PI * 2);
+      ctx.fill();
+
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+      return texture;
+    }
+
+    function getStickerTexture(color) {
+      if (!textureCache[color]) {
+        textureCache[color] = createStickerTexture(color);
+      }
+      return textureCache[color];
+    }
+
+    const logoTexture = createLogoTexture();
+
+    // ===== Materials =====
+    function createStickerMaterial(color) {
+      const mat = new THREE.MeshStandardMaterial({
+        map: getStickerTexture(color),
+        roughness: 0.3, // Lebih licin agar mengkilap dan reflektif terhadap cahaya
+        metalness: 0.0
+      });
+      mat.userData.color = color;
+      return mat;
+    }
+
+    function createLogoMaterial() {
+      const mat = new THREE.MeshStandardMaterial({
+        map: logoTexture,
+        roughness: 0.3,
+        metalness: 0.0
+      });
+      mat.userData.color = COLORS.white;
+      return mat;
+    }
+
+    function createBlackMaterial() {
+      const mat = new THREE.MeshStandardMaterial({
+        color: 0x000000,
+        roughness: 0.6,
+        metalness: 0.1
+      });
+      mat.userData.color = 'black';
+      return mat;
+    }
+
+    // ===== Build Cube =====
+    const cubies = [];
+    const initialStates = [];
+    const geometry = new THREE.BoxGeometry(0.95, 0.95, 0.95);
+    let firstInteraction = false;
+
+    function buildCube() {
+      for (let x = -1; x <= 1; x++) {
+        for (let y = -1; y <= 1; y++) {
+          for (let z = -1; z <= 1; z++) {
+            if (x === 0 && y === 0 && z === 0) continue;
+
+            const isTopCenter = (x === 0 && y === 1 && z === 0);
+
+            const materials = [
+              x === 1  ? createStickerMaterial(COLORS.red)    : createBlackMaterial(),
+              x === -1 ? createStickerMaterial(COLORS.orange) : createBlackMaterial(),
+              y === 1  ? (isTopCenter ? createLogoMaterial() : createStickerMaterial(COLORS.white)) : createBlackMaterial(),
+              y === -1 ? createStickerMaterial(COLORS.yellow) : createBlackMaterial(),
+              z === 1  ? createStickerMaterial(COLORS.green)  : createBlackMaterial(),
+              z === -1 ? createStickerMaterial(COLORS.blue)   : createBlackMaterial(),
+            ];
+
+            const cubie = new THREE.Mesh(geometry, materials);
+            cubie.position.set(x, y, z);
+            scene.add(cubie);
+            cubies.push(cubie);
+
+            initialStates.push({
+              position: cubie.position.clone(),
+              quaternion: cubie.quaternion.clone()
+            });
+          }
+        }
+      }
+    }
+
+    buildCube();
+
+    // ===== Rotation Logic =====
+    let isRotating = false;
+    let moveCount = 0;
+    let timerStarted = false;
+    let timerInterval = null;
+    let timerStart = 0;
+
+    const moveMap = {
+      'U':  { axis: 'y', layer:  1, dir: -1 },
+      "U'": { axis: 'y', layer:  1, dir:  1 },
+      'D':  { axis: 'y', layer: -1, dir:  1 },
+      "D'": { axis: 'y', layer: -1, dir: -1 },
+      'R':  { axis: 'x', layer:  1, dir: -1 },
+      "R'": { axis: 'x', layer:  1, dir:  1 },
+      'L':  { axis: 'x', layer: -1, dir:  1 },
+      "L'": { axis: 'x', layer: -1, dir: -1 },
+      'F':  { axis: 'z', layer:  1, dir: -1 },
+      "F'": { axis: 'z', layer:  1, dir:  1 },
+      'B':  { axis: 'z', layer: -1, dir:  1 },
+      "B'": { axis: 'z', layer: -1, dir: -1 },
+    };
+
+    function rotateFace(axis, layer, direction, duration = 250) {
+      return new Promise((resolve) => {
+        if (isRotating) { resolve(); return; }
+        isRotating = true;
+
+        const pivot = new THREE.Group();
+        scene.add(pivot);
+
+        const layerCubies = cubies.filter(c =>
+          Math.abs(c.position[axis] - layer) < 0.1
+        );
+
+        layerCubies.forEach(c => pivot.attach(c));
+
+        const targetAngle = direction * Math.PI / 2;
+        const startTime = performance.now();
+
+        function animate() {
+          const elapsed = performance.now() - startTime;
+          const t = Math.min(elapsed / duration, 1);
+          const eased = 1 - Math.pow(1 - t, 3);
+
+          pivot.rotation[axis] = targetAngle * eased;
+
+          if (t < 1) {
+            requestAnimationFrame(animate);
+          } else {
+            pivot.rotation[axis] = targetAngle;
+            layerCubies.forEach(c => scene.attach(c));
+            layerCubies.forEach(c => {
+              c.position.x = Math.round(c.position.x);
+              c.position.y = Math.round(c.position.y);
+              c.position.z = Math.round(c.position.z);
+            });
+            scene.remove(pivot);
+            isRotating = false;
+            resolve();
+          }
+        }
+
+        if (duration <= 0) {
+          pivot.rotation[axis] = targetAngle;
+          layerCubies.forEach(c => scene.attach(c));
+          layerCubies.forEach(c => {
+            c.position.x = Math.round(c.position.x);
+            c.position.y = Math.round(c.position.y);
+            c.position.z = Math.round(c.position.z);
+          });
+          scene.remove(pivot);
+          isRotating = false;
+          resolve();
+        } else {
+          animate();
+        }
+      });
+    }
+
+    async function doMove(move, count = true) {
+      const m = moveMap[move];
+      if (!m || isRotating) return;
+
+      if (count) {
+        moveCount++;
+        document.getElementById('moveCount').textContent = moveCount;
+        startTimer();
+        stopAutoRotate();
+      }
+
+      await rotateFace(m.axis, m.layer, m.dir);
+
+      if (count) {
+        checkSolved();
+      }
+    }
+
+    // ===== Timer =====
+    function startTimer() {
+      if (timerStarted) return;
+      timerStarted = true;
+      timerStart = Date.now();
+      timerInterval = setInterval(updateTimer, 100);
+    }
+
+    function stopTimer() {
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+      timerStarted = false;
+    }
+
+    function resetTimer() {
+      stopTimer();
+      document.getElementById('timer').textContent = '00:00';
+    }
+
+    function updateTimer() {
+      const elapsed = Math.floor((Date.now() - timerStart) / 1000);
+      const mins = Math.floor(elapsed / 60);
+      const secs = elapsed % 60;
+      document.getElementById('timer').textContent =
+        `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+
+    function stopAutoRotate() {
+      if (!firstInteraction) {
+        firstInteraction = true;
+        controls.autoRotate = false;
+      }
+    }
+
+    // ===== Solved Check =====
+    function checkSolved() {
+      if (moveCount === 0) return;
+      if (isSolved()) {
+        stopTimer();
+        showToast('Selamat! Kubus berhasil diselesaikan!', 'success');
+      }
+    }
+
+    function isSolved() {
+      const directions = [
+        { axis: 'x', sign: 1, normal: new THREE.Vector3(1, 0, 0) },
+        { axis: 'x', sign: -1, normal: new THREE.Vector3(-1, 0, 0) },
+        { axis: 'y', sign: 1, normal: new THREE.Vector3(0, 1, 0) },
+        { axis: 'y', sign: -1, normal: new THREE.Vector3(0, -1, 0) },
+        { axis: 'z', sign: 1, normal: new THREE.Vector3(0, 0, 1) },
+        { axis: 'z', sign: -1, normal: new THREE.Vector3(0, 0, -1) },
+      ];
+
+      const localNormals = [
+        new THREE.Vector3(1, 0, 0),
+        new THREE.Vector3(-1, 0, 0),
+        new THREE.Vector3(0, 1, 0),
+        new THREE.Vector3(0, -1, 0),
+        new THREE.Vector3(0, 0, 1),
+        new THREE.Vector3(0, 0, -1),
+      ];
+
+      for (const dir of directions) {
+        const colors = new Set();
+
+        for (const cubie of cubies) {
+          if (Math.round(cubie.position[dir.axis]) !== dir.sign) continue;
+
+          for (let i = 0; i < 6; i++) {
+            const worldNormal = localNormals[i].clone().applyQuaternion(cubie.quaternion);
+            if (worldNormal.distanceTo(dir.normal) < 0.1) {
+              const c = cubie.material[i].userData.color;
+              if (c && c !== 'black') {
+                colors.add(c);
+              }
+              break;
+            }
+          }
+        }
+
+        if (colors.size > 1) return false;
+      }
+
+      return true;
+    }
+
+    // ===== Scramble =====
+    let scrambling = false;
+
+    async function scramble() {
+      if (isRotating || scrambling) return;
+      scrambling = true;
+      showToast('Mengacak kubus...');
+
+      cubies.forEach((c, i) => {
+        c.position.copy(initialStates[i].position);
+        c.quaternion.copy(initialStates[i].quaternion);
+      });
+
+      const moves = Object.keys(moveMap);
+      const length = 25;
+      let lastFace = '';
+
+      for (let i = 0; i < length; i++) {
+        let move;
+        do {
+          move = moves[Math.floor(Math.random() * moves.length)];
+        } while (move[0] === lastFace);
+        lastFace = move[0];
+
+        const m = moveMap[move];
+        await rotateFace(m.axis, m.layer, m.dir, 100);
+      }
+
+      moveCount = 0;
+      document.getElementById('moveCount').textContent = '0';
+      resetTimer();
+      scrambling = false;
+      stopAutoRotate();
+      showToast('Kubus diacak! Selamat mencoba!');
+    }
+
+    // ===== Reset =====
+    function resetCube() {
+      if (isRotating || scrambling) return;
+      cubies.forEach((c, i) => {
+        c.position.copy(initialStates[i].position);
+        c.quaternion.copy(initialStates[i].quaternion);
+      });
+      moveCount = 0;
+      document.getElementById('moveCount').textContent = '0';
+      resetTimer();
+      showToast('Kubus direset!');
+    }
+
+    // ===== Drag to Rotate Face =====
+    const raycaster = new THREE.Raycaster();
+    const pointer = new THREE.Vector2();
+    let dragData = null;
+
+    function getNDC(e) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      return {
+        x: ((e.clientX - rect.left) / rect.width) * 2 - 1,
+        y: -((e.clientY - rect.top) / rect.height) * 2 + 1
+      };
+    }
+
+    function onPointerDown(e) {
+      if (isRotating || scrambling) return;
+
+      const coords = getNDC(e);
+      pointer.set(coords.x, coords.y);
+      raycaster.setFromCamera(pointer, camera);
+      const intersects = raycaster.intersectObjects(cubies);
+
+      if (intersects.length > 0) {
+        const hit = intersects[0];
+        const cubie = hit.object;
+        const faceNormal = hit.face.normal.clone();
+        faceNormal.transformDirection(cubie.matrixWorld);
+        faceNormal.round();
+
+        dragData = {
+          cubie,
+          faceNormal,
+          startX: coords.x,
+          startY: coords.y
+        };
+
+        controls.enabled = false;
+        stopAutoRotate();
+      }
+    }
+
+    function onPointerUp(e) {
+      if (!dragData) {
+        controls.enabled = true;
+        return;
+      }
+
+      const coords = getNDC(e);
+      const dx = coords.x - dragData.startX;
+      const dy = coords.y - dragData.startY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      if (dist < 0.04) {
+        dragData = null;
+        controls.enabled = true;
+        return;
+      }
+
+      const camRight = new THREE.Vector3();
+      const camUp = new THREE.Vector3();
+      camera.matrixWorld.extractBasis(camRight, camUp, new THREE.Vector3());
+
+      const dragDir = new THREE.Vector3();
+      dragDir.addScaledVector(camRight, dx);
+      dragDir.addScaledVector(camUp, dy);
+      dragDir.normalize();
+
+      const rotAxis = new THREE.Vector3().crossVectors(dragData.faceNormal, dragDir);
+
+      const ax = Math.abs(rotAxis.x);
+      const ay = Math.abs(rotAxis.y);
+      const az = Math.abs(rotAxis.z);
+
+      let axis, layer, direction;
+
+      if (ax > ay && ax > az) {
+        axis = 'x';
+        layer = Math.round(dragData.cubie.position.x);
+        direction = rotAxis.x > 0 ? 1 : -1;
+      } else if (ay > az) {
+        axis = 'y';
+        layer = Math.round(dragData.cubie.position.y);
+        direction = rotAxis.y > 0 ? 1 : -1;
+      } else {
+        axis = 'z';
+        layer = Math.round(dragData.cubie.position.z);
+        direction = rotAxis.z > 0 ? 1 : -1;
+      }
+
+      dragData = null;
+      controls.enabled = true;
+
+      moveCount++;
+      document.getElementById('moveCount').textContent = moveCount;
+      startTimer();
+
+      rotateFace(axis, layer, direction).then(() => checkSolved());
+    }
+
+    renderer.domElement.addEventListener('pointerdown', onPointerDown);
+    renderer.domElement.addEventListener('pointerup', onPointerUp);
+    renderer.domElement.addEventListener('pointercancel', () => {
+      dragData = null;
+      controls.enabled = true;
+    });
+
+    // ===== Button Events =====
+    document.querySelectorAll('.face-btn').forEach(btn => {
+      btn.addEventListener('click', () => doMove(btn.dataset.move));
+    });
+
+    document.getElementById('scrambleBtn').addEventListener('click', scramble);
+    document.getElementById('resetBtn').addEventListener('click', resetCube);
+
+    const lockBtn = document.getElementById('lockScrollBtn');
+    lockBtn.addEventListener('click', () => {
+      document.body.classList.toggle('lock-scroll');
+      lockBtn.classList.toggle('active');
+      const locked = document.body.classList.contains('lock-scroll');
+      showToast(locked ? 'Gulir dikunci' : 'Gulir dibuka');
+    });
+
+    // ===== Keyboard =====
+    document.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      const key = e.key.toUpperCase();
+      if (['U', 'D', 'L', 'R', 'F', 'B'].includes(key)) {
+        e.preventDefault();
+        const move = e.shiftKey ? key + "'" : key;
+        doMove(move);
+      } else if (key === 'S' && e.shiftKey) {
+        e.preventDefault();
+        scramble();
+      }
+    });
+
+    // ===== Toast =====
+    const toastEl = document.getElementById('toast');
+    let toastTimer = null;
+
+    function showToast(msg, type = '') {
+      toastEl.textContent = msg;
+      toastEl.className = 'toast show ' + type;
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toastEl.classList.remove('show');
+      }, 2800);
+    }
+
+    // ===== Resize =====
+    function resize() {
+      const rect = container.getBoundingClientRect();
+      const w = Math.max(1, rect.width);
+      const h = Math.max(1, rect.height);
+      renderer.setSize(w, h);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    }
+
+    window.addEventListener('resize', resize);
+    const resizeObserver = new ResizeObserver(resize);
+    resizeObserver.observe(container);
+    resize();
+
+    // ===== Animation Loop =====
+    function tick() {
+      requestAnimationFrame(tick);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    tick();
+
+    // ===== Welcome =====
+    setTimeout(() => showToast('Selamat datang di DyatRubix!'), 600);
+  </script>
+</body>
+</html>      flex-direction: column;
       position: relative;
       overflow-x: hidden;
       -webkit-font-smoothing: antialiased;
